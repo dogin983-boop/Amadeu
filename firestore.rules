@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid (string), email (string), name (string), role (admin, staff, client)
+    //
+    // Collection: products
+    // Fields: name (string), description (string), price (number), category (string), imageUrl (string), active (bool)
+    //
+    // Collection: appointments
+    // Fields: customerName (string), phone (string), equipment (string), defectDescription (string), status (string), trackingCode (string), createdAt (timestamp)
+    //
+    // Collection: game_reservations
+    // Fields: customerName (string), machineId (string), startTime (string), duration (string), createdAt (timestamp)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "dogin983@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isStaff() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' ||
+        isAdmin()
+      );
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             data.email is string && data.email.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.role in ['admin', 'staff', 'client'];
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.price is number && data.price >= 0 &&
+             data.category in ["Lan House", "Papelaria", "Tech", "Fotografia", "Topos de Bolo", "Manutenção"] &&
+             data.active is bool;
+    }
+
+    function isValidAppointment(data) {
+      return data.customerName is string && data.customerName.size() > 0 && data.customerName.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             data.equipment is string && data.equipment.size() > 0 && data.equipment.size() < 100 &&
+             data.trackingCode is string && data.trackingCode.size() > 0 &&
+             data.status in ["Em análise", "Pendente", "Pronto"];
+    }
+
+    function isValidReservation(data) {
+      return data.customerName is string && data.customerName.size() > 0 && data.customerName.size() < 100 &&
+             data.machineId is string && data.machineId.size() > 0 &&
+             data.duration in ["1h", "2h", "Corujão"];
+    }
+
+    // Rules
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isStaff();
+      allow create: if isAuthenticated() && isOwner(uid) && isValidUser(request.resource.data) && (request.resource.data.role == 'client' || isAdmin());
+      allow update: if isAuthenticated() && (
+        (isOwner(uid) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || 
+        (isAdmin() && isValidUser(request.resource.data))
+      );
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isStaff() && isValidProduct(request.resource.data);
+      allow update: if isStaff() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isStaff() || (request.query.trackingCode != null && resource.data.trackingCode == request.query.trackingCode);
+      allow create: if isValidAppointment(request.resource.data);
+      allow update: if isStaff() && isValidAppointment(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /game_reservations/{reservationId} {
+      allow read: if isStaff();
+      allow create: if isValidReservation(request.resource.data);
+      allow update: if isStaff() && isValidReservation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

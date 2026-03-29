@@ -1,0 +1,7 @@
+{
+  "name": "Remix: Amadeu Informática \u0026 Services",
+  "description": "Plataforma completa para gestão de serviços de Lan House, Papelaria e Manutenção Técnica, com vitrine de produtos e painel administrativo.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

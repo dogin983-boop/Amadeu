@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff", "client"] }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Product": {
+      "title": "Product/Service",
+      "description": "Items displayed in the vitrine",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string", "enum": ["Lan House", "Papelaria", "Tech", "Fotografia", "Topos de Bolo", "Manutenção"] },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["name", "category", "price"]
+    },
+    "Appointment": {
+      "title": "Maintenance Appointment",
+      "description": "Computer/Game maintenance tracking",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "equipment": { "type": "string" },
+        "defectDescription": { "type": "string" },
+        "status": { "type": "string", "enum": ["Em análise", "Pendente", "Pronto"] },
+        "trackingCode": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "phone", "equipment", "trackingCode", "status"]
+    },
+    "GameReservation": {
+      "title": "Game Machine Reservation",
+      "description": "Reservation for Lan House machines",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "machineId": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "duration": { "type": "string", "enum": ["1h", "2h", "Corujão"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "machineId", "startTime", "duration"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Vitrine items"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Maintenance orders"
+    },
+    "/game_reservations/{reservationId}": {
+      "schema": "GameReservation",
+      "description": "Lan House reservations"
+    }
+  }
+}
